@@ -21,7 +21,7 @@ S3 is AWS object storage. It does not behave like a UNIX file system in that one
 
 I keep asking Shiv if there is some way of treating the UW Atmos TRMM ftp server like a virtual file system and he keeps patiently explaining NO so that's why I am suggesting working from a cloud copy. We can share the results with the *atmos* folks in case they are interested in our approach to data access. 
 
-Shiv has the copy process running with only one login per directory; so it seems to be reasonably efficient and quick "per region-month". He can comment on wall clock time. If we take that to be 3 minutes then we have a total copy time of 3/60 * 20 * 17 * 12 = 220 hours or ten days. That's rather a lot of time but it is free to shove it into AWS. 
+Shiv has the copy process running with only one login per directory; so it seems to be reasonably efficient and quick "per region-month". He can comment on wall clock time. If we take that to be 3 minutes then we have a total copy time of 3/60 * 20 * 17 * 12 = 220 hours or ten days. That's rather a lot of time but at least there is no cost associated to uploading data to AWS in this way.
 
 @Shiv this would be a good time to confirm / fix my numbers.
 
