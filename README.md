@@ -10,7 +10,7 @@
 * **interp_data** folder only
   * Let TLA be the region code, e.g. EPO/ = East Pacific Ocean (so 20 or so of these)
   * Let yyyy be the year and mm be the month running from 1998 10 to 2014 08 so 2003/ and 04/ for example
-  * The URL directory format is then 'http://trmm.atmos.washington.edu/' + TLA + yyyy + mm
+  * The URL directory format is then 'http://trmm.atmos.washington.edu/' + TLA + 'interp_data/' + yyyy + mm
 * Each file covers a fairly short time range; need to decompose a data file or two (small / large) in a Notebook 
 
 
