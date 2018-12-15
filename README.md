@@ -24,4 +24,17 @@ Shiv has the copy process running with only one login per directory; so it seems
 
 @Shiv this would be a good time to confirm / fix my numbers.
 
+#### code example by Shiv
 
+Note that by default username and password are identical per atmos policy.
+
+```
+import requests
+auth_data= ('username','password')
+url = "http://trmm.atmos.washington.edu/EPO/interp_data/1999/01/TPR7_uw1_06294.19990101.002101_EPO.nc4"
+r = requests.get(url, auth = auth_data,stream = True)
+filename = 'test.nc4'
+if r.status_code == 200:
+    with open(filename, 'wb') as f:
+        f.write(r.content)
+```
