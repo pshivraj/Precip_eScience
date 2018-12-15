@@ -4,7 +4,8 @@
 
 ## How to scan these data
 
-* 20 or so regions?
+* [TRMM](https://en.wikipedia.org/wiki/Tropical_Rainfall_Measuring_Mission) launched on 27 Nov 1997; orbit 6294 is Jan 1 1999; 
+* 20 or so regions... with some overlap
 * 17 years, 12 months per year, 30 days per month, 130 files per day, 70kb per file
 * Total volume estimate: 1.1TB
 * **interp_data** folder only
