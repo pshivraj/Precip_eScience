@@ -4,18 +4,19 @@
 
 ## How to scan these data
 
-* [TRMM](https://en.wikipedia.org/wiki/Tropical_Rainfall_Measuring_Mission) launched on 27 Nov 1997; orbit 6294 is Jan 1 1999; 
-* 20 or so regions... with some overlap
-* 17 years, 12 months per year, 30 days per month, 130 files per day, 70kb per file
-* Total volume estimate: 1.1TB
+* [TRMM](https://en.wikipedia.org/wiki/Tropical_Rainfall_Measuring_Mission) launched on 27 Nov 1997
+  * TRMM is in LEO with 35 degrees inclination, 92.5 minutes / orbit. Example data below is from orbit 6294; Jan 1 1999
+* 20 or so regions... some overlap; 17 years x 12 months per year x 30 days per month x 130 files per day x 70kb per file ~ 1.1TB
 * **interp_data** folder only
-  * Let TLA be the region code, e.g. EPO/ = East Pacific Ocean (so 20 or so of these)
-  * Let yyyy be the year and mm be the month running from 1998 10 to 2014 08 so 2003/ and 04/ for example
+  * XYZ is a region code, e.g. EPO/ = East Pacific Ocean (so 20 or so of these)
+  * Let yyyy be the year and mm be the month running from 1998 01 to 2014 08 so '2003/' and '04/' for example
   * The URL directory format is then 'http://trmm.atmos.washington.edu/' + TLA + 'interp_data/' + yyyy + mm
-* Each file covers a fairly short time range; need to decompose a data file or two (small / large) in a Notebook 
+* Files cover short time intervals
+  * ```TPR7_uw1_06294.19990101.002101_EPO.nc4``` is our example filename; notice orbit, date, time and region
 
 
 ### Why copy the data? What is S3?
+
 
 S3 is AWS object storage. It does not behave like a UNIX file system in that one can't do random access into the bytes of a file. No matter; treating the files as hermetic objects will work and S3 access is reasonably fast; and we can work with it pretty much as though it is a file system using Python, specifically pandas and/or xarray. We do want to make sure the S3 bucket and the Jupyter Hub are in the same region. 
 
