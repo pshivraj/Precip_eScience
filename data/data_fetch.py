@@ -24,11 +24,11 @@ def data_fetch_netcdf(user_login, url, output_folder):
             
 if __name__=='__main__':
     start_time = time.time()
-    auth_data = ('pshivraj@uw.edu','pshivraj@uw.edu')
+    auth_data = ('username','username')
     # define month and year to get data for
     months = [str(i).zfill(2) for i in range(1, 13)]
     years = [str(i).zfill(4) for i in range(1998, 2018)]
-    
+
     output_folder = 'raw_files/'
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
