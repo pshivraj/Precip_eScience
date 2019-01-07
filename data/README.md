@@ -26,3 +26,6 @@ Class `TRMM_data()` needs to be initialized with:
       1.) Providing authentication for TRMM website self.auth_data = ('','')
       2.) Providing region to download data for e.g- 'EPO' etc self.output_folder= 'EPO/'
       
+## Runtime
+
+For `EPO` it takes ~5 hours on a c5.4x large machine multiprocessed over 15 CPU's.
