@@ -22,7 +22,7 @@ class TRMM_data(object):
     def __init__(self, month_year):
         self.month_year = month_year
         self.creds_data = {}
-        self.auth_data = ('pshivraj@uw.edu', 'pshivraj@uw.edu')
+        self.auth_data = ('', '')
         self.client = None
         self.output_folder = 'EPO/'
 
