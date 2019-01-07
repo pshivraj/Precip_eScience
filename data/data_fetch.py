@@ -85,8 +85,8 @@ if __name__ == '__main__':
     month_year = list(itertools.product(years, months))
     start_time = time.time()
     # multiprocess the file upload for various year and month combinations.
-    process = 2
+    process = 15
     pool = Pool(process)
-    pool.map(_multiprocess_handler, month_year[:2], chunksize=1)
+    pool.map(_multiprocess_handler, month_year, chunksize=len(month_year)//process)
     print("Done")
     print("--- %s seconds ---" % (time.time() - start_time))
