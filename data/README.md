@@ -23,7 +23,7 @@ Post setting up credentials next steps involves :
 
 Class `TRMM_data()` needs to be initialized with:
   
-      1.) Providing authentication for TRMM website: self.auth_data = ('','')
+      1.) Providing authentication for TRMM website: self.auth_data = ('username','password')
       2.) Providing region to download data for e.g- 'EPO': self.output_folder= 'EPO/'
       
 ## Runtime
