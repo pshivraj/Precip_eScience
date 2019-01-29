@@ -64,28 +64,31 @@ def load_s3_data(SR_minrate):
     bucket = s3.Bucket('himatdata')
     home = os.getcwd()
 
-    for obj in bucket.objects.filter(Delimiter='', Prefix='Trmm/EPO/2000_01'):
-        bucket.download_file(obj.key,os.path.join(os.path.join(home,'S3_downloads/',obj.key[17:])))
-        logging.info("Downloaded file: %s", obj.key[17:])
+    for obj in bucket.objects.filter(Delimiter='', Prefix='Trmm/EPO/2000_01/'):
+        if obj.key[-4:] == ".nc4":
 
-    #file = 'oneProfile/TPR7_uw1_00538.19980101.000558_EPO.nc4'
-        L, S, A, la, lo, Ti = extract_data(xr.open_dataset(os.path.join(home,'S3_downloads/',obj.key[17:])),SR_minrate)
-       #append the new data in the matrices
-        if count==0:
-            Lat_Heat = L
-            LAT = la[:,0]
-            LON = lo[:,0]
-            TIME = Ti
-            count += 1
-        else:
-            Lat_Heat = np.concatenate((Lat_Heat,L),axis =0)
-            LAT = np.concatenate((LAT,la[:,0]),axis =0)
-            LON = np.concatenate((LON,lo[:,0]),axis =0)
-            TIME = np.concatenate((TIME,Ti),axis =0)
-        surf_r = np.append(surf_r,S)
-        
-        #delete the local file
-        os.remove(os.path.join(home,'S3_downloads/',obj.key[17:]))
+            logging.info("Full file name: %s", obj.key)
+            bucket.download_file(obj.key,os.path.join(os.path.join(home,'S3_downloads/',obj.key[17:])))
+            logging.info("Downloaded file: %s", obj.key[17:])
+
+        #file = 'oneProfile/TPR7_uw1_00538.19980101.000558_EPO.nc4'
+            L, S, A, la, lo, Ti = extract_data(xr.open_dataset(os.path.join(home,'S3_downloads/',obj.key[17:])),SR_minrate)
+           #append the new data in the matrices
+            if count==0:
+                Lat_Heat = L
+                LAT = la[:,0]
+                LON = lo[:,0]
+                TIME = Ti
+                count += 1
+            else:
+                Lat_Heat = np.concatenate((Lat_Heat,L),axis =0)
+                LAT = np.concatenate((LAT,la[:,0]),axis =0)
+                LON = np.concatenate((LON,lo[:,0]),axis =0)
+                TIME = np.concatenate((TIME,Ti),axis =0)
+            surf_r = np.append(surf_r,S)
+            
+            #delete the local file
+            os.remove(os.path.join(home,'S3_downloads/',obj.key[17:]))
         
 
     #Put all the data into one array, where rows are individual observations and the columns are 
@@ -291,8 +294,8 @@ def create_distance_matrix(Data,FrontSpeed,Rad_Earth):
     return Distance
 
 if __name__ == '__main__':
-	#Define Key Values Here
-	start_time = time.time()
+    #Define Key Values Here
+    start_time = time.time()
     SR_minrate = 5 #only keep data with rainrate greater than this value
     opt_frac = .05 #fraction of data to use when determining the optimal dbscan parameters
     Rad_Earth = 6371 #km earth's radius
