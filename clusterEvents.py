@@ -67,7 +67,6 @@ def load_s3_data(SR_minrate):
     for obj in bucket.objects.filter(Delimiter='', Prefix='Trmm/EPO/2000_01/'):
         if obj.key[-4:] == ".nc4":
 
-            logging.info("Full file name: %s", obj.key)
             bucket.download_file(obj.key,os.path.join(os.path.join(home,'S3_downloads/',obj.key[17:])))
             logging.info("Downloaded file: %s", obj.key[17:])
 
@@ -175,7 +174,7 @@ def optimize_dbscan(data,metric='silhouette'):
             f=dbscan_evaluation_db,
             pbounds={"EPS": (100, 600), "min_samp": (5, 30)}, #bounds on my parameters - these are very rough guesses right now
             random_state=1234,
-            verbose=2
+            verbose=0
         )
         
     else:
@@ -183,7 +182,7 @@ def optimize_dbscan(data,metric='silhouette'):
             f=dbscan_evaluation_sil,
             pbounds={"EPS": (100, 600), "min_samp": (5, 30)}, #bounds on my parameters - these are very rough guesses right now
             random_state=1234,
-            verbose=2
+            verbose=0
         )
     
     optimizer.maximize(n_iter=10)
@@ -309,11 +308,14 @@ if __name__ == '__main__':
     Data = np.squeeze(Data)
     
     DatatoCluster = data_to_cluster(Data)
-    
+
+    logging.info("Ready to Calculate Distance Matrix")
     Distance = create_distance_matrix(DatatoCluster,FrontSpeed,Rad_Earth)
     
+    logging.info("Distance Matrix Calculate, determining parameters")
     eps, minSamples = optimal_params(Distance[0:int(len(DatatoCluster)*opt_frac),0:int(len(DatatoCluster)*opt_frac)])
     
+    logging.info("Parameters Set, Fitting entire dataset")
     labels = cluster_and_label_data(Distance,eps,minSamples)
     
     save_s3_data(labels,eps,minSamples,Data,Time)
