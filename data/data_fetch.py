@@ -1,5 +1,5 @@
 """
-Script to download netcdf from TRMM website.
+Script to download netcdf from TRMM website to s3 and optionally retrieve from s3.
 """
 import requests
 from bs4 import BeautifulSoup
@@ -9,9 +9,11 @@ import time
 import logging
 import boto3
 import json
+import multiprocessing
 from multiprocessing import Pool
 import itertools
-logging.basicConfig(filename='trmm.log', level=logging.INFO)
+import sys
+import argparse
 
 
 class TRMM_data(object):
@@ -22,7 +24,7 @@ class TRMM_data(object):
     def __init__(self, month_year):
         self.month_year = month_year
         self.creds_data = {}
-        self.auth_data = ('', '')
+        self.auth_data = ('pshivraj@uw.edu', 'pshivraj@uw.edu')
         self.client = None
         self.output_folder = 'EPO/'
 
@@ -48,6 +50,7 @@ class TRMM_data(object):
         # folder structure to partitioned the data year_month
         output_temp = self.output_folder + year + '_' + month
         url_data = "http://trmm.atmos.washington.edu/{}interp_data/{}/{}".format(self.output_folder, year, month)
+        print(url_data)
         start_time_year_month = time.time()
         r = requests.get(url_data, auth=self.auth_data)
         # check if url exists then extract netcdf links to download and upload to s3.
@@ -67,6 +70,25 @@ class TRMM_data(object):
         else:
             print('No data/authentication for'.format(month_year))
 
+    def data_pull_s3(self):
+        """
+            Utility function to get data from s3 partitioned by year_month.
+        """
+        year = self.month_year[0]
+        month = self.month_year[1]
+        self.s3 = boto3.resource('s3',aws_access_key_id=self.creds_data['key_id'],
+                                aws_secret_access_key=self.creds_data['key_access'])
+        bucket = self.s3.Bucket('himatdata')
+        home = os.getcwd()
+        file_path = os.path.join(*[home, 'Trmm/', self.output_folder, year + '_' + month])
+        print(file_path)
+        if not os.path.exists(file_path):
+           os.makedirs(file_path)
+        for obj in bucket.objects.filter(Delimiter='', Prefix='Trmm/{}{}_{}'.format(self.output_folder, year, month)):
+            if obj.key.endswith('.nc4'):
+                bucket.download_file(obj.key,os.path.join(os.path.join(home, obj.key)))
+        logging.info("Done with Year Month: %s", month_year)
+
 
 def _multiprocess_handler(month_year):
      """
@@ -74,10 +96,18 @@ def _multiprocess_handler(month_year):
      """
      trmm_data = TRMM_data(month_year)
      trmm_data.load_creds()
-     trmm_data.data_fetch_netcdf()
+     if args.type == 's3_push':
+         trmm_data.data_fetch_netcdf()
+     elif args.type == 's3_pull':
+         trmm_data.data_pull_s3()
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Script to push or retrieve data from s3')
+    parser.add_argument('-t', '--type', choices=['s3_pull', 's3_push'], default="s3_pull", help='type of operation on data')
+    args = parser.parse_args()
+    logging.basicConfig(filename='trmm_{}.log'.format(args.type), level=logging.INFO)
+    logging.info("Executing %s", args.type)
     # define month and year to get data for
     months = [str(i).zfill(2) for i in range(1, 13)]
     years = [str(i).zfill(4) for i in range(1998, 2014)]
@@ -86,6 +116,7 @@ if __name__ == '__main__':
     start_time = time.time()
     # multiprocess the file upload for various year and month combinations.
     process = 15
+    process = multiprocessing.cpu_count() if process > multiprocessing.cpu_count() else process
     pool = Pool(process)
     pool.map(_multiprocess_handler, month_year, chunksize=len(month_year)//process)
     print("Done")
