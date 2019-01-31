@@ -172,7 +172,7 @@ def optimize_dbscan(data,metric='silhouette'):
     if metric == 'davies':
         optimizer = BayesianOptimization(
             f=dbscan_evaluation_db,
-            pbounds={"EPS": (100, 600), "min_samp": (5, 30)}, #bounds on my parameters - these are very rough guesses right now
+            pbounds={"EPS": (10, 250), "min_samp": (5, 25)}, #bounds on my parameters - these are very rough guesses right now
             random_state=1234,
             verbose=0
         )
@@ -180,7 +180,7 @@ def optimize_dbscan(data,metric='silhouette'):
     else:
         optimizer = BayesianOptimization(
             f=dbscan_evaluation_sil,
-            pbounds={"EPS": (100, 600), "min_samp": (5, 30)}, #bounds on my parameters - these are very rough guesses right now
+            pbounds={"EPS": (10, 250), "min_samp": (5, 25)}, #bounds on my parameters - these are very rough guesses right now
             random_state=1234,
             verbose=0
         )
