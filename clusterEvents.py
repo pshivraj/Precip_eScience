@@ -6,7 +6,6 @@ import glob
 from sklearn.cluster import DBSCAN
 from sklearn import metrics
 from sklearn.metrics import pairwise_distances, davies_bouldin_score
-from mpl_toolkits.basemap import Basemap
 from bayes_opt import BayesianOptimization
 import math
 import boto3
@@ -117,7 +116,8 @@ def data_to_cluster(Data):
     return Xdata
 
 def cluster_and_label_data(Distance,eps,min_samps):
-    model = DBSCAN(eps=eps, min_samples=min_samps,metric='precomputed')
+    #model = DBSCAN(eps=eps, min_samples=min_samps,metric='precomputed')
+    model = DBSCAN(eps=eps,min_samples=min_samps)
     model.fit(Distance)
 
     labels = model.labels_
@@ -309,14 +309,18 @@ if __name__ == '__main__':
     
     DatatoCluster = data_to_cluster(Data)
 
-    logging.info("Ready to Calculate Distance Matrix")
-    Distance = create_distance_matrix(DatatoCluster,FrontSpeed,Rad_Earth)
+    #logging.info("Ready to Calculate Distance Matrix")
+    #Distance = create_distance_matrix(DatatoCluster,FrontSpeed,Rad_Earth)
     
     logging.info("Distance Matrix Calculate, determining parameters")
-    eps, minSamples = optimal_params(Distance[0:int(len(DatatoCluster)*opt_frac),0:int(len(DatatoCluster)*opt_frac)])
+
+    #eps, minSamples = optimal_params(Distance[0:int(len(DatatoCluster)*opt_frac),0:int(len(DatatoCluster)*opt_frac)])
     
     logging.info("Parameters Set, Fitting entire dataset")
-    labels = cluster_and_label_data(Distance,eps,minSamples)
+    
+    labels = cluster_and_label_data(DatatoCluster,150,15)
+
+    #labels = cluster_and_label_data(Distance,eps,minSamples)
     
     save_s3_data(labels,eps,minSamples,Data,Time)
     print("Done")
