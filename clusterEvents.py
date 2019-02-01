@@ -124,6 +124,15 @@ def cluster_and_label_data(Distance,eps,min_samps):
     
     return labels
 
+def cluster_optics_labels(Distance,eps,min_samps):
+    #model = DBSCAN(eps=eps, min_samples=min_samps,metric='precomputed')
+    model = OPTICS(max_eps=eps*1000,min_samples=min_samps)
+    model.fit(Distance)
+
+    labels = model.labels_
+    
+    return labels
+
 #Use Bayesian Optimization on the data to get the best parameters for the clustering
 def optimal_params(Data):
     Opt = optimize_dbscan(Data,'davies') #it seems like silhouette takes substantially longer?
@@ -318,7 +327,10 @@ if __name__ == '__main__':
     
     logging.info("Parameters Set, Fitting entire dataset")
     
-    labels = cluster_and_label_data(DatatoCluster,150,15)
+    #labels = cluster_and_label_data(DatatoCluster,150,15)
+
+    labels = cluster_optics_labels(DatatoCluster,150,15)
+    logging.info("Fit the Data!")
 
     #labels = cluster_and_label_data(Distance,eps,minSamples)
     
