@@ -3,7 +3,7 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 import glob
-from sklearn.cluster import DBSCAN
+from sklearn.cluster import DBSCAN, OPTICS
 from sklearn import metrics
 from sklearn.metrics import pairwise_distances, davies_bouldin_score
 from bayes_opt import BayesianOptimization
@@ -124,14 +124,80 @@ def cluster_and_label_data(Distance,eps,min_samps):
     
     return labels
 
-def cluster_optics_labels(Distance,eps,min_samps):
+def cluster_optics_labels(Data,eps,min_samps):
     #model = DBSCAN(eps=eps, min_samples=min_samps,metric='precomputed')
-    model = OPTICS(max_eps=eps*1000,min_samples=min_samps)
-    model.fit(Distance)
+    model = OPTICS(max_eps=eps*1000,min_samples=min_samps,metric='distance_sphere_and_time')
+    model.fit(Data)
 
     labels = model.labels_
     
     return labels
+
+#Use Bayesian Optimization on the data to get the best parameters for the clustering
+def optimal_params_optics(Data):
+    Opt = optimize_optics(Data,'davies') #it seems like silhouette takes substantially longer?
+    min_samples = int(Opt['params']['min_samples'])
+    max_eps = Opt['params']['max_eps']
+
+    return max_eps, min_samples
+
+#function that fits dbscan for given parameters and returns the davies bouldin score evaluation metric 
+def optics_eval_db(max_eps,min_samples,data):
+    model = OPTICS(max_eps=max_eps, min_samples=min_samples,metric='distance_sphere_and_time')
+    model.fit(data)
+    labels = model.labels_
+    if len(set(labels))<2:
+        score = 0
+    else:
+        score = davies_bouldin_score(data, labels)
+        
+    return score
+
+#function that fits dbscan for given parameters and returns the silhouette score evaluation metric 
+def optics_eval_sil(max_eps,min_samples,data):
+    model = OPTICS(max_eps=max_eps, min_samples=min_samples,metric='distance_sphere_and_time')
+    model.fit(data)
+    labels = model.labels_
+    if len(set(labels))<2:
+        score = 0
+    else:
+        score = metrics.silhouette_score(data,labels)
+        
+    return score
+
+#Applies bayesian optimization to determine DBSCAN parameters that maximize the evaluation metric (specified as input)
+def optimize_optics(data,metric='silhouette'):
+    """Apply Bayesian Optimization to DBSCAN parameters."""
+    def optics_evaluation_sil(max_eps, min_samples):
+        """Wrapper of DBSCAN evaluation."""
+        min_samples = int(min_samples) #insure that you are using an integer value for the minimum samples parameter
+        return optics_eval_sil(max_eps=max_eps, min_samples=min_samples, data=data)
+
+    def optics_evaluation_db(max_eps, min_samples):
+        """Wrapper of DBSCAN evaluation."""
+        min_samples = int(min_samples) #insure that you are using an integer value for the minimum samples parameter
+        return optics_eval_db(max_eps=max_eps, min_samples=min_samples, data=data)
+
+    if metric == 'davies':
+        optimizer = BayesianOptimization(
+            f=optics_eval_db,
+            pbounds={"max_eps": (10, 25000000), "min_samples": (5, 25)}, #bounds on my parameters - these are very rough guesses right now
+            random_state=1234,
+            verbose=2
+        )
+        
+    else:
+        optimizer = BayesianOptimization(
+            f=optics_evaluation_sil,
+            pbounds={"max_eps": (10, 250*100000), "min_samples": (5, 25)}, #bounds on my parameters - these are very rough guesses right now
+            random_state=1234,
+            verbose=2
+        )
+    
+    optimizer.maximize(init_points=10, n_iter=10)
+
+    logging.info("Final Result: %s", optimizer.max)
+    return optimizer.max
 
 #Use Bayesian Optimization on the data to get the best parameters for the clustering
 def optimal_params(Data):
@@ -289,6 +355,18 @@ def lat_long_to_arc(lat1,long1,lat2,long2):
 
     return arc
 
+def distance_sphere_and_time(x,y):
+    Rad_Earth = 6371 #km earth's radius
+    MesoScale = 200 #Mesoscale is up to a few hundred km'
+    FrontSpeed = 30 # km/h speed at which a front often moves
+
+    Scale_Time_to_Distance = FrontSpeed
+
+    d = Rad_Earth*lat_long_to_arc(x[0],x[1],y[0],y[1])
+    D = math.sqrt(d**2+(Scale_Time_to_Distance*(x[2]-y[2]))**2)
+
+    return D
+
 def create_distance_matrix(Data,FrontSpeed,Rad_Earth):
     Scale_Time_to_Distance = FrontSpeed
 
@@ -317,23 +395,20 @@ if __name__ == '__main__':
     Data = np.squeeze(Data)
     
     DatatoCluster = data_to_cluster(Data)
-
-    #logging.info("Ready to Calculate Distance Matrix")
-    #Distance = create_distance_matrix(DatatoCluster,FrontSpeed,Rad_Earth)
     
-    logging.info("Distance Matrix Calculate, determining parameters")
+    logging.info("Determining parameters")
 
-    #eps, minSamples = optimal_params(Distance[0:int(len(DatatoCluster)*opt_frac),0:int(len(DatatoCluster)*opt_frac)])
+    max_eps, min_samples = optimal_params(Data[0:int(len(DatatoCluster)*opt_frac),:])
     
     logging.info("Parameters Set, Fitting entire dataset")
     
     #labels = cluster_and_label_data(DatatoCluster,150,15)
 
-    labels = cluster_optics_labels(DatatoCluster,150,15)
+    labels = cluster_optics_labels(DatatoCluster,max_eps,min_samples)
     logging.info("Fit the Data!")
 
     #labels = cluster_and_label_data(Distance,eps,minSamples)
     
-    save_s3_data(labels,eps,minSamples,Data,Time)
+    #save_s3_data(labels,eps,minSamples,Data,Time)
     print("Done")
     print("--- %s seconds ---" % (time.time() - start_time))
