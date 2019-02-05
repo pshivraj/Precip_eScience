@@ -1,4 +1,5 @@
 #import the different packages used throughout
+#from mpl_toolkits.basemap import Basemap
 import xarray as xr
 import numpy as np
 import pandas as pd
@@ -27,7 +28,7 @@ def save_s3_data(labels,eps,minSamples,Data,Time):
                 'minimumSamples': minSamples})
 
     #save as a netcdf
-    data_events.to_netcdf(path = "SortedData.nc4", compute = True)
+    data_events.to_netcdf(path = "SortedData_Optics.nc4", compute = True)
     
     home = expanduser("~")
 
@@ -40,7 +41,7 @@ def save_s3_data(labels,eps,minSamples,Data,Time):
     bucket = s3.Bucket('himatdata')
     home = os.getcwd()
     
-    bucket.upload_file('SortedData.nc4','Trmm/EPO/2000_01')
+    bucket.upload_file('SortedData_Optics.nc4','Trmm/EPO/2000_01')
 
 #function that connects to the S3 bucket, downloads the file, reads in the data, and deletes the file
 def load_s3_data(SR_minrate):
@@ -84,7 +85,7 @@ def load_s3_data(SR_minrate):
                 LON = np.concatenate((LON,lo[:,0]),axis =0)
                 TIME = np.concatenate((TIME,Ti),axis =0)
             surf_r = np.append(surf_r,S)
-            
+             
             #delete the local file
             os.remove(os.path.join(home,'S3_downloads/',obj.key[17:]))
         
@@ -126,7 +127,7 @@ def cluster_and_label_data(Distance,eps,min_samps):
 
 def cluster_optics_labels(Data,eps,min_samps):
     #model = DBSCAN(eps=eps, min_samples=min_samps,metric='precomputed')
-    model = OPTICS(max_eps=eps*1000,min_samples=min_samps,metric='distance_sphere_and_time')
+    model = OPTICS(max_eps=eps*1000,min_samples=min_samps,metric=distance_sphere_and_time)
     model.fit(Data)
 
     labels = model.labels_
@@ -143,7 +144,7 @@ def optimal_params_optics(Data):
 
 #function that fits dbscan for given parameters and returns the davies bouldin score evaluation metric 
 def optics_eval_db(max_eps,min_samples,data):
-    model = OPTICS(max_eps=max_eps, min_samples=min_samples,metric='distance_sphere_and_time')
+    model = OPTICS(max_eps=max_eps, min_samples=min_samples,metric=distance_sphere_and_time)
     model.fit(data)
     labels = model.labels_
     if len(set(labels))<2:
@@ -155,7 +156,7 @@ def optics_eval_db(max_eps,min_samples,data):
 
 #function that fits dbscan for given parameters and returns the silhouette score evaluation metric 
 def optics_eval_sil(max_eps,min_samples,data):
-    model = OPTICS(max_eps=max_eps, min_samples=min_samples,metric='distance_sphere_and_time')
+    model = OPTICS(max_eps=max_eps, min_samples=min_samples,metric=distance_sphere_and_time)
     model.fit(data)
     labels = model.labels_
     if len(set(labels))<2:
@@ -180,7 +181,7 @@ def optimize_optics(data,metric='silhouette'):
 
     if metric == 'davies':
         optimizer = BayesianOptimization(
-            f=optics_eval_db,
+            f=optics_evaluation_db,
             pbounds={"max_eps": (10, 25000000), "min_samples": (5, 25)}, #bounds on my parameters - these are very rough guesses right now
             random_state=1234,
             verbose=2
@@ -398,10 +399,12 @@ if __name__ == '__main__':
     
     logging.info("Determining parameters")
 
-    max_eps, min_samples = optimal_params(Data[0:int(len(DatatoCluster)*opt_frac),:])
+    max_eps, min_samples = optimal_params_optics(Data[0:int(len(DatatoCluster)*opt_frac),:])
     
-    logging.info("Parameters Set, Fitting entire dataset")
+    #logging.info("Parameters Set, Fitting entire dataset")
     
+    #max_eps = 150000
+    #min_samples = 15
     #labels = cluster_and_label_data(DatatoCluster,150,15)
 
     labels = cluster_optics_labels(DatatoCluster,max_eps,min_samples)
@@ -409,6 +412,6 @@ if __name__ == '__main__':
 
     #labels = cluster_and_label_data(Distance,eps,minSamples)
     
-    #save_s3_data(labels,eps,minSamples,Data,Time)
+    save_s3_data(labels,max_eps,min_samples,Data,Time)
     print("Done")
     print("--- %s seconds ---" % (time.time() - start_time))
