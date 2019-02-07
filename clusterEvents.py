@@ -43,6 +43,44 @@ def save_s3_data(labels,eps,minSamples,Data,Time):
     
     bucket.upload_file('SortedData_Optics.nc4','Trmm/EPO/2000_01')
 
+#function that reads local data from TRMM in the EC2 instances
+def read_TRMM_data(SR_minrate):
+    #create empty matrices to hold the extracted data
+    Lat_Heat = []
+    surf_r = []
+    LAT = []
+    LON = []
+    TIME = []
+    count = 0
+
+    for file in glob.iglob("~/precip/Precip_eScience/data/Trmm/**/*.nc4",recursive=True):
+        logging.info("Downloaded file: %s", file)
+
+        #file = 'oneProfile/TPR7_uw1_00538.19980101.000558_EPO.nc4'
+            L, S, A, la, lo, Ti = extract_data(xr.open_dataset(file),SR_minrate)
+           #append the new data in the matrices
+            if count==0:
+                Lat_Heat = L
+                LAT = la[:,0]
+                LON = lo[:,0]
+                TIME = Ti
+                count += 1
+            else:
+                Lat_Heat = np.concatenate((Lat_Heat,L),axis =0)
+                LAT = np.concatenate((LAT,la[:,0]),axis =0)
+                LON = np.concatenate((LON,lo[:,0]),axis =0)
+                TIME = np.concatenate((TIME,Ti),axis =0)
+            surf_r = np.append(surf_r,S) 
+        
+    #Put all the data into one array, where rows are individual observations and the columns are 
+    #[Latitude, Longitude, Surface Rain, Latent Heat Profile]
+    Data = np.concatenate((LAT.reshape(len(LAT),1),LON.reshape(len(LON),1),surf_r.reshape(len(surf_r),1),Lat_Heat),axis=1)
+    Data = np.squeeze(Data)
+    
+    #Remove repeated values
+    uniqueData = np.unique(Data,axis=0)
+    
+    return uniqueData, TIME, A
 #function that connects to the S3 bucket, downloads the file, reads in the data, and deletes the file
 def load_s3_data(SR_minrate):
     #create empty matrices to hold the extracted data
@@ -389,7 +427,8 @@ if __name__ == '__main__':
     MesoScale = 200 #Mesoscale is up to a few hundred km'
     FrontSpeed = 30 # km/h speed at which a front often moves
 
-    Data, Time, A = load_s3_data(SR_minrate)
+#    Data, Time, A = load_s3_data(SR_minrate)
+    Data, Time, A = read_TRMM_data(SR_minrate)
     DeltaTime = time_to_deltaTime(Time)
     
     Data = np.concatenate((DeltaTime.reshape(len(DeltaTime),1), Data), axis=1)
@@ -401,16 +440,10 @@ if __name__ == '__main__':
 
     max_eps, min_samples = optimal_params_optics(Data[0:int(len(DatatoCluster)*opt_frac),:])
     
-    #logging.info("Parameters Set, Fitting entire dataset")
-    
-    #max_eps = 150000
-    #min_samples = 15
-    #labels = cluster_and_label_data(DatatoCluster,150,15)
+    logging.info("Parameters Set, Fitting entire dataset")
 
     labels = cluster_optics_labels(DatatoCluster,max_eps,min_samples)
     logging.info("Fit the Data!")
-
-    #labels = cluster_and_label_data(Distance,eps,minSamples)
     
     save_s3_data(labels,max_eps,min_samples,Data,Time)
     print("Done")
