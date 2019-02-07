@@ -17,7 +17,7 @@ import time
 import logging
 logging.basicConfig(filename='trmm.log', level=logging.INFO)
 
-def save_s3_data(labels,eps,minSamples,Data,Time):
+def save_s3_data(labels,eps,minSamples,Data,Time,filename):
     #package the matrices as a dataset to save as a netcdf
     data_events = xr.Dataset(
         data_vars = {'Data': (('time', 'vector'),Data), 
@@ -28,7 +28,7 @@ def save_s3_data(labels,eps,minSamples,Data,Time):
                 'minimumSamples': minSamples})
 
     #save as a netcdf
-    data_events.to_netcdf(path = "SortedData_Optics.nc4", compute = True)
+    data_events.to_netcdf(path = filename+"Clusted_Data.nc4", compute = True)
     
     home = expanduser("~")
 
@@ -41,10 +41,10 @@ def save_s3_data(labels,eps,minSamples,Data,Time):
     bucket = s3.Bucket('himatdata')
     home = os.getcwd()
     
-    bucket.upload_file('SortedData_Optics.nc4','Trmm/EPO/2000_01')
+    bucket.upload_file(filename+"Clusted_Data.nc4",'Trmm/EPO/')
 
 #function that reads local data from TRMM in the EC2 instances
-def read_TRMM_data(SR_minrate):
+def read_TRMM_data(filename,SR_minrate):
     #create empty matrices to hold the extracted data
     Lat_Heat = []
     surf_r = []
@@ -55,7 +55,7 @@ def read_TRMM_data(SR_minrate):
     A = []
     logging.info("in read TRMM")
 
-    for file in glob.iglob("~/precip/Precip_eScience/data/Trmm/**/*.nc4",recursive=True):
+    for file in glob.glob("data/Trmm/EPO/"+filename+"/*.nc4"):
         logging.info("Downloaded file: %s", file)
 
         L, S, A, la, lo, Ti = extract_data(xr.open_dataset(file),SR_minrate)
@@ -71,17 +71,18 @@ def read_TRMM_data(SR_minrate):
             LAT = np.concatenate((LAT,la[:,0]),axis =0)
             LON = np.concatenate((LON,lo[:,0]),axis =0)
             TIME = np.concatenate((TIME,Ti),axis =0)
-        surf_r = np.append(surf_r,S) 
-        
+        surf_r = np.append(surf_r,S)
+
     #Put all the data into one array, where rows are individual observations and the columns are 
     #[Latitude, Longitude, Surface Rain, Latent Heat Profile]
     Data = np.concatenate((LAT.reshape(len(LAT),1),LON.reshape(len(LON),1),surf_r.reshape(len(surf_r),1),Lat_Heat),axis=1)
     Data = np.squeeze(Data)
-    
+
     #Remove repeated values
     uniqueData = np.unique(Data,axis=0)
-    
+
     return uniqueData, TIME, A
+    
 #function that connects to the S3 bucket, downloads the file, reads in the data, and deletes the file
 def load_s3_data(SR_minrate):
     #create empty matrices to hold the extracted data
@@ -156,8 +157,7 @@ def data_to_cluster(Data):
     return Xdata
 
 def cluster_and_label_data(Distance,eps,min_samps):
-    #model = DBSCAN(eps=eps, min_samples=min_samps,metric='precomputed')
-    model = DBSCAN(eps=eps,min_samples=min_samps)
+    model = DBSCAN(eps=eps, min_samples=min_samps,metric=distance_sphere_and_time)
     model.fit(Distance)
 
     labels = model.labels_
@@ -249,7 +249,7 @@ def optimal_params(Data):
 
 #function that fits dbscan for given parameters and returns the davies bouldin score evaluation metric 
 def dbscan_eval_db(eps,min_samples,data):
-    model = DBSCAN(eps=eps, min_samples=min_samples,metric='precomputed')
+    model = DBSCAN(eps=eps, min_samples=min_samples,metric=distance_sphere_and_time)
     model.fit(data)
     labels = model.labels_
     if len(set(labels))<2:
@@ -261,7 +261,7 @@ def dbscan_eval_db(eps,min_samples,data):
 
 #function that fits dbscan for given parameters and returns the silhouette score evaluation metric 
 def dbscan_eval_sil(eps,min_samples,data):
-    model = DBSCAN(eps=eps, min_samples=min_samples,metric='precomputed')
+    model = DBSCAN(eps=eps, min_samples=min_samples,metric=distance_sphere_and_time)
     model.fit(data)
     labels = model.labels_
     if len(set(labels))<2:
@@ -287,7 +287,7 @@ def optimize_dbscan(data,metric='silhouette'):
     if metric == 'davies':
         optimizer = BayesianOptimization(
             f=dbscan_evaluation_db,
-            pbounds={"EPS": (10, 250), "min_samp": (5, 25)}, #bounds on my parameters - these are very rough guesses right now
+            pbounds={"EPS": (10, 150), "min_samp": (5, 25)}, #bounds on my parameters - these are very rough guesses right now
             random_state=1234,
             verbose=0
         )
@@ -295,7 +295,7 @@ def optimize_dbscan(data,metric='silhouette'):
     else:
         optimizer = BayesianOptimization(
             f=dbscan_evaluation_sil,
-            pbounds={"EPS": (10, 250), "min_samp": (5, 25)}, #bounds on my parameters - these are very rough guesses right now
+            pbounds={"EPS": (10, 150), "min_samp": (5, 25)}, #bounds on my parameters - these are very rough guesses right now
             random_state=1234,
             verbose=0
         )
@@ -419,17 +419,17 @@ def create_distance_matrix(Data,FrontSpeed,Rad_Earth):
             Distance[j,i] = D
     return Distance
 
-if __name__ == '__main__':
-    #Define Key Values Here
+def main_script(filename):
     start_time = time.time()
+    #Define Key Values Here
     SR_minrate = 5 #only keep data with rainrate greater than this value
-    opt_frac = .05 #fraction of data to use when determining the optimal dbscan parameters
+    opt_frac = .5 #fraction of data to use when determining the optimal dbscan parameters
     Rad_Earth = 6371 #km earth's radius
     MesoScale = 200 #Mesoscale is up to a few hundred km'
     FrontSpeed = 30 # km/h speed at which a front often moves
 
 #    Data, Time, A = load_s3_data(SR_minrate)
-    Data, Time, A = read_TRMM_data(SR_minrate)
+    Data, Time, A = read_TRMM_data(filename,SR_minrate)
     DeltaTime = time_to_deltaTime(Time)
     
     Data = np.concatenate((DeltaTime.reshape(len(DeltaTime),1), Data), axis=1)
@@ -439,13 +439,21 @@ if __name__ == '__main__':
     
     logging.info("Determining parameters")
 
-    max_eps, min_samples = optimal_params_optics(Data[0:int(len(DatatoCluster)*opt_frac),:])
+    eps, min_samples = optimal_params(Data[0:int(len(DatatoCluster)*opt_frac),:])
     
     logging.info("Parameters Set, Fitting entire dataset")
-
-    labels = cluster_optics_labels(DatatoCluster,max_eps,min_samples)
+    logging.info("--- %s seconds ---" % (time.time() - start_time))
+    
+    start_time = time.time()
+    labels = cluster_and_label_data(DatatoCluster,eps,min_samples)
     logging.info("Fit the Data!")
     
-    save_s3_data(labels,max_eps,min_samples,Data,Time)
+
+    save_s3_data(labels,eps,min_samples,Data,Time,filename)
     print("Done")
     print("--- %s seconds ---" % (time.time() - start_time))
+
+
+if __name__ == '__main__':
+
+    main_script("2000_01")
