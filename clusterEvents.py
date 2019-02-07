@@ -52,25 +52,26 @@ def read_TRMM_data(SR_minrate):
     LON = []
     TIME = []
     count = 0
+    A = []
+    logging.info("in read TRMM")
 
     for file in glob.iglob("~/precip/Precip_eScience/data/Trmm/**/*.nc4",recursive=True):
         logging.info("Downloaded file: %s", file)
 
-        #file = 'oneProfile/TPR7_uw1_00538.19980101.000558_EPO.nc4'
-            L, S, A, la, lo, Ti = extract_data(xr.open_dataset(file),SR_minrate)
-           #append the new data in the matrices
-            if count==0:
-                Lat_Heat = L
-                LAT = la[:,0]
-                LON = lo[:,0]
-                TIME = Ti
-                count += 1
-            else:
-                Lat_Heat = np.concatenate((Lat_Heat,L),axis =0)
-                LAT = np.concatenate((LAT,la[:,0]),axis =0)
-                LON = np.concatenate((LON,lo[:,0]),axis =0)
-                TIME = np.concatenate((TIME,Ti),axis =0)
-            surf_r = np.append(surf_r,S) 
+        L, S, A, la, lo, Ti = extract_data(xr.open_dataset(file),SR_minrate)
+        #append the new data in the matrices
+        if count==0:
+            Lat_Heat = L
+            LAT = la[:,0]
+            LON = lo[:,0]
+            TIME = Ti
+            count += 1
+        else:
+            Lat_Heat = np.concatenate((Lat_Heat,L),axis =0)
+            LAT = np.concatenate((LAT,la[:,0]),axis =0)
+            LON = np.concatenate((LON,lo[:,0]),axis =0)
+            TIME = np.concatenate((TIME,Ti),axis =0)
+        surf_r = np.append(surf_r,S) 
         
     #Put all the data into one array, where rows are individual observations and the columns are 
     #[Latitude, Longitude, Surface Rain, Latent Heat Profile]
