@@ -55,7 +55,7 @@ def read_TRMM_data(SR_minrate):
     A = []
     logging.info("in read TRMM")
 
-    for file in glob.iglob("~/precip/Precip_eScience/data/Trmm/**/*.nc4",recursive=True):
+    for file in glob.glob("data/Trmm/**/**/*.nc4"):
         logging.info("Downloaded file: %s", file)
 
         L, S, A, la, lo, Ti = extract_data(xr.open_dataset(file),SR_minrate)
