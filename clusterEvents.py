@@ -55,7 +55,11 @@ def read_TRMM_data(filename,SR_minrate):
     A = []
     logging.info("in read TRMM")
 
+<<<<<<< HEAD
     for file in glob.glob("data/Trmm/EPO/"+filename+"/*.nc4"):
+=======
+    for file in glob.glob("data/Trmm/**/**/*.nc4"):
+>>>>>>> 71a8605c8ea2f557a9a4b81a7e44f63051439e5e
         logging.info("Downloaded file: %s", file)
 
         L, S, A, la, lo, Ti = extract_data(xr.open_dataset(file),SR_minrate)
