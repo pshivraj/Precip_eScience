@@ -85,7 +85,6 @@ def read_TRMM_data(year,month,SR_minrate):
     filename = str(year_prev)+"_"+str(month_prev).zfill(2)
     files = glob.glob("data/Trmm/EPO/"+filename+"/*.nc4")
     days = [int(f[-17:-15]) for f in files]
-    days_unique = np.unique(days)
     indices = np.argwhere(days>np.max(days)-5)
 
     for i in range(len(indices)):
@@ -110,7 +109,7 @@ def read_TRMM_data(year,month,SR_minrate):
     filename = str(year_next)+"_"+str(month_next).zfill(2)
     files = glob.glob("data/Trmm/EPO/"+filename+"/*.nc4")
     days = [int(f[-17:-15]) for f in files]
-    indices = np.argwhere(days<6)
+    indices = np.argwhere(days<np.min(days)+5)
 
     for i in range(len(indices)):
         file = files[i]
@@ -471,7 +470,6 @@ def create_distance_matrix(Data,FrontSpeed,Rad_Earth):
     return Distance
 
 def main_script(year,month):
-    start_time = time.time()
     #Define Key Values Here
     SR_minrate = 5 #only keep data with rainrate greater than this value
     opt_frac = .5 #fraction of data to use when determining the optimal dbscan parameters
@@ -490,23 +488,24 @@ def main_script(year,month):
     
     logging.info("Determining parameters")
 
-    eps, min_samples = optimal_params(Data[0:int(len(DatatoCluster)*opt_frac),:])
+    # eps, min_samples = optimal_params(Data[0:int(len(DatatoCluster)*opt_frac),:])
     
-    logging.info("Parameters Set, Fitting entire dataset")
-    logging.info("--- %s seconds ---" % (time.time() - start_time))
+    eps = 150
+    min_samples = 21
     
-    start_time = time.time()
     labels = cluster_and_label_data(DatatoCluster,eps,min_samples)
     logging.info("Fit the Data!")
     
 
     save_s3_data(labels,eps,min_samples,Data,Time,filename)
-    print("Done")
-    print("--- %s seconds ---" % (time.time() - start_time))
-
 
 if __name__ == '__main__':
+    start_time = time.time()
 
     for i in range(1,13):
         logging.info("In Month: ", str(i))
         main_script(2000,i)
+    
+    print("Done")
+    print("--- %s seconds ---" % (time.time() - start_time))
+
