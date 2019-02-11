@@ -44,7 +44,7 @@ def save_s3_data(labels,eps,minSamples,Data,Time,filename):
     bucket.upload_file(filename+"Clusted_Data.nc4",'Trmm/EPO/')
 
 #function that reads local data from TRMM in the EC2 instances
-def read_TRMM_data(filename,SR_minrate):
+def read_TRMM_data(year,month,SR_minrate):
     #create empty matrices to hold the extracted data
     Lat_Heat = []
     surf_r = []
@@ -54,7 +54,9 @@ def read_TRMM_data(filename,SR_minrate):
     count = 0
     A = []
     logging.info("in read TRMM")
+    filename = str(year)+"_"+str(month).zfill(2)
 
+    #Load in data for that month
     for file in glob.glob("data/Trmm/EPO/"+filename+"/*.nc4"):
         logging.info("Downloaded file: %s", file)
 
@@ -71,6 +73,55 @@ def read_TRMM_data(filename,SR_minrate):
             LAT = np.concatenate((LAT,la[:,0]),axis =0)
             LON = np.concatenate((LON,lo[:,0]),axis =0)
             TIME = np.concatenate((TIME,Ti),axis =0)
+        surf_r = np.append(surf_r,S)
+
+    #Load in previous 5 days of data
+    year_prev = year
+    month_prev = month-1
+    if month==1: 
+        year_prev = year-1
+        month_prev = 12
+
+    filename = str(year_prev)+"_"+str(month_prev).zfill(2)
+    files = glob.glob("data/Trmm/EPO/"+filename+"/*.nc4")
+    days = [int(f[-17:-15]) for f in files]
+    days_unique = np.unique(days)
+    indices = np.argwhere(days>np.max(days)-5)
+
+    for i in range(len(indices)):
+        file = files[i]
+        logging.info("Downloaded file: %s", file)
+
+        L, S, A, la, lo, Ti = extract_data(xr.open_dataset(file),SR_minrate)
+        #append the new data in the matrices
+        Lat_Heat = np.concatenate((Lat_Heat,L),axis =0)
+        LAT = np.concatenate((LAT,la[:,0]),axis =0)
+        LON = np.concatenate((LON,lo[:,0]),axis =0)
+        TIME = np.concatenate((TIME,Ti),axis =0)
+        surf_r = np.append(surf_r,S)
+
+    #Load in next 5 days of data
+    year_next = year
+    month_next = month+1
+    if month==12: 
+        year_next = year+1
+        month_next = 1
+
+    filename = str(year_next)+"_"+str(month_next).zfill(2)
+    files = glob.glob("data/Trmm/EPO/"+filename+"/*.nc4")
+    days = [int(f[-17:-15]) for f in files]
+    indices = np.argwhere(days<6)
+
+    for i in range(len(indices)):
+        file = files[i]
+        logging.info("Downloaded file: %s", file)
+
+        L, S, A, la, lo, Ti = extract_data(xr.open_dataset(file),SR_minrate)
+        #append the new data in the matrices
+        Lat_Heat = np.concatenate((Lat_Heat,L),axis =0)
+        LAT = np.concatenate((LAT,la[:,0]),axis =0)
+        LON = np.concatenate((LON,lo[:,0]),axis =0)
+        TIME = np.concatenate((TIME,Ti),axis =0)
         surf_r = np.append(surf_r,S)
 
     #Put all the data into one array, where rows are individual observations and the columns are 
@@ -419,7 +470,7 @@ def create_distance_matrix(Data,FrontSpeed,Rad_Earth):
             Distance[j,i] = D
     return Distance
 
-def main_script(filename):
+def main_script(year,month):
     start_time = time.time()
     #Define Key Values Here
     SR_minrate = 5 #only keep data with rainrate greater than this value
@@ -427,9 +478,9 @@ def main_script(filename):
     Rad_Earth = 6371 #km earth's radius
     MesoScale = 200 #Mesoscale is up to a few hundred km'
     FrontSpeed = 30 # km/h speed at which a front often moves
-
+    filename = str(year)+"_"+str(month).zfill(2)
 #    Data, Time, A = load_s3_data(SR_minrate)
-    Data, Time, A = read_TRMM_data(filename,SR_minrate)
+    Data, Time, A = read_TRMM_data(year,month,SR_minrate)
     DeltaTime = time_to_deltaTime(Time)
     
     Data = np.concatenate((DeltaTime.reshape(len(DeltaTime),1), Data), axis=1)
@@ -456,4 +507,6 @@ def main_script(filename):
 
 if __name__ == '__main__':
 
-    main_script("2000_01")
+    for i in range(1,13):
+        logging.info("In Month: ", str(i))
+        main_script(2000,i)
