@@ -199,6 +199,45 @@ def time_to_deltaTime(Time):
     
     return DeltaTime
 
+#remove clusters in 5 days of next month
+def remove_dublicate(Data, Time, labels, month, year):
+    n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+    time = pd.DatetimeIndex(Time)
+    index = np.argwhere((labels==-1) & (time.month>month))
+
+    Data = np.delete(Data,index,0)
+    Time = np.delete(Time,index)
+    time = np.delete(time,index)
+    labels = np.delete(labels,index)
+
+    for i in range(n_clusters_):
+        cluster = Data[labels==i,:]
+        tcluster = time[labels==i]
+        if month<12:
+            if np.amin(np.array(tcluster.month))>month:
+                Data = Data[labels!=i,:]
+                Time = Time[labels!=i]
+                time = time[labels!=i]
+                labels = labels[labels!=i]
+            elif np.max(tcluster).month>month & np.max(tcluster).day>4:
+                Data = Data[labels!=i,:]
+                Time = Time[labels!=i]
+                time = time[labels!=i]
+                labels = labels[labels!=i]
+        else:
+            if np.amax(np.array(tcluster.month))==1:
+                Data = Data[labels!=i,:]
+                Time = Time[labels!=i]
+                time = time[labels!=i]
+                labels = labels[labels!=i]
+            elif np.max(tcluster).month==1 & np.max(tcluster).day>4:
+                Data = Data[labels!=i,:]
+                Time = Time[labels!=i]
+                time = time[labels!=i]
+                labels = labels[labels!=i]
+
+    return Data, Time, labels
+
 #Create array to Cluster the rainfall events, Scale the grid lat/lon so it is weighted 'fairly' compared to time
 def data_to_cluster(Data):
     #Extract [Lat, Lon, DeltaTime]
@@ -490,12 +529,13 @@ def main_script(year,month):
 
     # eps, min_samples = optimal_params(Data[0:int(len(DatatoCluster)*opt_frac),:])
     
-    eps = 150
+    eps = 200 #150
     min_samples = 21
     
     labels = cluster_and_label_data(DatatoCluster,eps,min_samples)
     logging.info("Fit the Data!")
     
+    Data, Time, labels = remove_dublicate(Data, Time, labels, month, year)
 
     save_s3_data(labels,eps,min_samples,Data,Time,filename)
 
