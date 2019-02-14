@@ -133,9 +133,9 @@ def read_TRMM_data(year,month,SR_minrate):
     Data = np.squeeze(Data)
 
     #Remove repeated values
-    uniqueData = np.unique(Data,axis=0)
+    uniqueData, indices = np.unique(Data,axis=0,return_index=True)
 
-    return uniqueData, TIME, A
+    return uniqueData, TIME[indices], A
     
 #function that connects to the S3 bucket, downloads the file, reads in the data, and deletes the file
 def load_s3_data(SR_minrate):
