@@ -90,12 +90,8 @@ def read_TRMM_data(year,month,SR_minrate):
         days = [int(f[-17:-15]) for f in files]
         indices = np.argwhere(days>np.max(days)-5)
 
-        logging.info('Files: ' np.shape(files))
-        logging.info('Select Days: ' np.shape(indices))
-        logging.info(np.max(days))
-
         for i in range(len(indices)):
-            file = files[i]
+            file = files[int(indices[i])]
             logging.info("Downloaded file: %s", file)
 
             L, S, A, la, lo, Ti = extract_data(xr.open_dataset(file),SR_minrate)
@@ -113,14 +109,14 @@ def read_TRMM_data(year,month,SR_minrate):
         year_next = year+1
         month_next = 1
 
-    if year_next<2014
+    if year_next<2014:
         filename = str(year_next)+"_"+str(month_next).zfill(2)
         files = glob.glob("data/Trmm/EPO/"+filename+"/*.nc4")
         days = [int(f[-17:-15]) for f in files]
         indices = np.argwhere(days<np.min(days)+5)
 
         for i in range(len(indices)):
-            file = files[i]
+            file = files[int(indices[i])]
             logging.info("Downloaded file: %s", file)
 
             L, S, A, la, lo, Ti = extract_data(xr.open_dataset(file),SR_minrate)
@@ -551,7 +547,7 @@ if __name__ == '__main__':
     year = 2000
     month = 7
     SR_minrate = 5
-    def read_TRMM_data(year,month,SR_minrate):
+    read_TRMM_data(year,month,SR_minrate)
     # start_time = time.time()
 
     # for j in range(1998,2014):
