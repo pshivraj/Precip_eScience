@@ -66,14 +66,14 @@ def read_TRMM_data(year,month,SR_minrate):
         #append the new data in the matrices
         if count==0:
             Lat_Heat = L
-            LAT = la[:,0]
-            LON = lo[:,0]
+            LAT = la
+            LON = lo
             TIME = Ti
             count += 1
         else:
             Lat_Heat = np.concatenate((Lat_Heat,L),axis =0)
-            LAT = np.concatenate((LAT,la[:,0]),axis =0)
-            LON = np.concatenate((LON,lo[:,0]),axis =0)
+            LAT = np.concatenate((LAT,la),axis =0)
+            LON = np.concatenate((LON,lo),axis =0)
             TIME = np.concatenate((TIME,Ti),axis =0)
         surf_r = np.append(surf_r,S)
 
@@ -97,8 +97,8 @@ def read_TRMM_data(year,month,SR_minrate):
             L, S, A, la, lo, Ti = extract_data(xr.open_dataset(file),SR_minrate)
             #append the new data in the matrices
             Lat_Heat = np.concatenate((Lat_Heat,L),axis =0)
-            LAT = np.concatenate((LAT,la[:,0]),axis =0)
-            LON = np.concatenate((LON,lo[:,0]),axis =0)
+            LAT = np.concatenate((LAT,la),axis =0)
+            LON = np.concatenate((LON,lo),axis =0)
             TIME = np.concatenate((TIME,Ti),axis =0)
             surf_r = np.append(surf_r,S)
 
@@ -122,8 +122,8 @@ def read_TRMM_data(year,month,SR_minrate):
             L, S, A, la, lo, Ti = extract_data(xr.open_dataset(file),SR_minrate)
             #append the new data in the matrices
             Lat_Heat = np.concatenate((Lat_Heat,L),axis =0)
-            LAT = np.concatenate((LAT,la[:,0]),axis =0)
-            LON = np.concatenate((LON,lo[:,0]),axis =0)
+            LAT = np.concatenate((LAT,la),axis =0)
+            LON = np.concatenate((LON,lo),axis =0)
             TIME = np.concatenate((TIME,Ti),axis =0)
             surf_r = np.append(surf_r,S)
 
@@ -169,14 +169,14 @@ def load_s3_data(SR_minrate):
            #append the new data in the matrices
             if count==0:
                 Lat_Heat = L
-                LAT = la[:,0]
-                LON = lo[:,0]
+                LAT = la
+                LON = lo
                 TIME = Ti
                 count += 1
             else:
                 Lat_Heat = np.concatenate((Lat_Heat,L),axis =0)
-                LAT = np.concatenate((LAT,la[:,0]),axis =0)
-                LON = np.concatenate((LON,lo[:,0]),axis =0)
+                LAT = np.concatenate((LAT,la),axis =0)
+                LON = np.concatenate((LON,lo),axis =0)
                 TIME = np.concatenate((TIME,Ti),axis =0)
             surf_r = np.append(surf_r,S)
              
@@ -414,8 +414,9 @@ def extract_data(file, SR_min=5):
     time = file.time.data
     
     #create grid of altitude, lat, and lon coordinates
-    LAT, ALTITUDE, LON = np.meshgrid(lat, altitude_lh, lon)
+    LON, LAT = np.meshgrid(lon, lat)
 
+    plt.scatter(LON,LAT,surf_rain)
     #size of lat and lon as variables
     nlat = len(lat)
     nlon = len(lon)
@@ -424,9 +425,8 @@ def extract_data(file, SR_min=5):
     #reshape as column vector (note the indicing is now column*ncolumns+row)
     surf_rain = np.reshape(surf_rain,[nlat*nlon])
     LH = np.reshape(latent_heating,[nalt,nlat*nlon])
-    ALTITUDE = np.reshape (ALTITUDE,[nalt,nlat*nlon])
-    LON = np.reshape (LON,[nalt,nlat*nlon])
-    LAT = np.reshape (LAT,[nalt,nlat*nlon])
+    LON = np.reshape(LON,[nlat*nlon])
+    LAT = np.reshape(LAT,[nlat*nlon])
 
     #Remove values with NaN and rainfall less than cut-off
     surf_R = surf_rain[~np.isnan(surf_rain)]
@@ -436,27 +436,22 @@ def extract_data(file, SR_min=5):
     Lat_Heat = Lat_Heat[:,surf_R>=SR_min]
     Lat_Heat = np.squeeze(Lat_Heat)
 
-    ALTITUDE = ALTITUDE[:,~np.isnan(surf_rain)]
-    ALTITUDE = ALTITUDE[:,surf_R>=SR_min]
-    ALTITUDE = np.squeeze(ALTITUDE)
-
-    LAT = LAT[:,~np.isnan(surf_rain)]
-    LAT = LAT[:,surf_R>=SR_min]
+    LAT = LAT[~np.isnan(surf_rain)]
+    LAT = LAT[surf_R>=SR_min]
     LAT = np.squeeze(LAT)
 
-    LON = LON[:,~np.isnan(surf_rain)]
-    LON = LON[:,surf_R>=SR_min]
+    LON = LON[~np.isnan(surf_rain)]
+    LON = LON[surf_R>=SR_min]
     LON = np.squeeze(LON)
 
     #Remove any profiles where there is missing latent heat info
     surf_r = surf_r[~pd.isnull(Lat_Heat).any(axis=0)]
-    LAT = LAT[:,~pd.isnull(Lat_Heat).any(axis=0)]
-    LON = LON[:,~pd.isnull(Lat_Heat).any(axis=0)]
-    ALTITUDE = ALTITUDE[:,~pd.isnull(Lat_Heat).any(axis=0)]
+    LAT = LAT[~pd.isnull(Lat_Heat).any(axis=0)]
+    LON = LON[~pd.isnull(Lat_Heat).any(axis=0)]
     Lat_Heat = Lat_Heat[:,~pd.isnull(Lat_Heat).any(axis=0)]
     Time = np.repeat(time,len(surf_r))
     
-    return Lat_Heat.T, surf_r.T, ALTITUDE.T, LAT.T, LON.T, Time.T
+    return Lat_Heat.T, surf_r.T, altitude_lh, LAT.T, LON.T, Time.T
 
 #calcuate the distance (in degrees) between 2 points in lat/long
 def lat_long_to_arc(lat1,long1,lat2,long2):
@@ -546,11 +541,13 @@ def main_script(year,month):
 if __name__ == '__main__':
 
     start_time = time.time()
-    j = 1998
+    j = 2000
+    i = 8
+    main_script(j,i)
     # for j in range(1998,2014):
-    for i in range(1,13):
-        logging.info("In Month: ", str(i))
-        main_script(j,i)
+    # for i in range(1,13):
+    #     logging.info("In Month: ", str(i))
+    #     main_script(j,i)
     
     print("Done")
     print("--- %s seconds ---" % (time.time() - start_time))
