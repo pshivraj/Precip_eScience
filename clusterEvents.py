@@ -548,7 +548,7 @@ if __name__ == '__main__':
     month = 8
     SR_minrate = 2
     Data, Time, A = read_TRMM_data(year,month,SR_minrate)
-    np.save("Testing_August2000.npy",'Data'=Data,'Time'=Time)
+    np.savez('Testing_August2000.npz',Data,Time)
     # start_time = time.time()
 
     # for j in range(1998,2014):
