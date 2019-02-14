@@ -545,9 +545,14 @@ def main_script(year,month):
 
 if __name__ == '__main__':
     year = 2000
-    month = 7
-    SR_minrate = 5
-    read_TRMM_data(year,month,SR_minrate)
+    month = 8
+    SR_minrate = 2
+    Data, Time, A = read_TRMM_data(year,month,SR_minrate)
+    labels = np.zeros(len(Data))
+    eps = 200 #150
+    min_samples = 21
+    filename = "Testing_August2000"
+    save_s3_data(labels,eps,min_samples,Data,Time,filename)
     # start_time = time.time()
 
     # for j in range(1998,2014):
