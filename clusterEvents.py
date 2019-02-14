@@ -514,10 +514,10 @@ def create_distance_matrix(Data,FrontSpeed,Rad_Earth):
 
 def main_script(year,month):
     #Define Key Values Here
-    SR_minrate = 5 #only keep data with rainrate greater than this value
+    SR_minrate = 2 #only keep data with rainrate greater than this value
     opt_frac = .5 #fraction of data to use when determining the optimal dbscan parameters
     Rad_Earth = 6371 #km earth's radius
-    MesoScale = 200 #Mesoscale is up to a few hundred km'
+    MesoScale = 720 #Mesoscale is up to a few hundred km'
     FrontSpeed = 30 # km/h speed at which a front often moves
     filename = str(year)+"_"+str(month).zfill(2)
 #    Data, Time, A = load_s3_data(SR_minrate)
@@ -533,7 +533,7 @@ def main_script(year,month):
 
     # eps, min_samples = optimal_params(Data[0:int(len(DatatoCluster)*opt_frac),:])
     
-    eps = 200 #150
+    eps = MesoScale #150
     min_samples = 21
     
     labels = cluster_and_label_data(DatatoCluster,eps,min_samples)
@@ -544,18 +544,14 @@ def main_script(year,month):
     save_s3_data(labels,eps,min_samples,Data,Time,filename)
 
 if __name__ == '__main__':
-    year = 2000
-    month = 8
-    SR_minrate = 2
-    Data, Time, A = read_TRMM_data(year,month,SR_minrate)
-    np.savez('Testing_August2000.npz',Data,Time)
-    # start_time = time.time()
 
+    start_time = time.time()
+    j = 1998
     # for j in range(1998,2014):
-    #     for i in range(1,13):
-    #         logging.info("In Month: ", str(i))
-    #         main_script(j,i)
+    for i in range(1,13):
+        logging.info("In Month: ", str(i))
+        main_script(j,i)
     
-    # print("Done")
-    # print("--- %s seconds ---" % (time.time() - start_time))
+    print("Done")
+    print("--- %s seconds ---" % (time.time() - start_time))
 
