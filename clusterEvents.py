@@ -15,7 +15,6 @@ from os.path import expanduser
 import json
 import time
 import logging
-logging.basicConfig(filename='trmm.log', level=logging.INFO)
 
 def save_s3_data(labels,eps,minSamples,Data,Time,filename):
     #package the matrices as a dataset to save as a netcdf
@@ -41,9 +40,9 @@ def save_s3_data(labels,eps,minSamples,Data,Time,filename):
     bucket = s3.Bucket('himatdata')
     home = os.getcwd()
     
-    bucket.upload_file(filename+"Clustered_Data.nc4",'Trmm/EPO/'+filename+'Clustered_Data.nc4')
+    bucket.upload_file(filename+"Clustered_Data.nc4",'Trmm/EPO/ClusteringRun1/'+filename+'Clustered_Data.nc4')
 
-    #os.remove(filename+"Clustered_Data.nc4")
+    os.remove(filename+"Clustered_Data.nc4")
 
 #function that reads local data from TRMM in the EC2 instances
 def read_TRMM_data(year,month,SR_minrate):
@@ -524,7 +523,7 @@ def main_script(year,month):
 
     # eps, min_samples = optimal_params(Data[0:int(len(DatatoCluster)*opt_frac),:])
     
-    eps = MesoScale #150
+    eps = MesoScale 
     min_samples = 21
     
     labels = cluster_and_label_data(DatatoCluster,eps,min_samples)
@@ -535,16 +534,14 @@ def main_script(year,month):
     save_s3_data(labels,eps,min_samples,Data,Time,filename)
 
 if __name__ == '__main__':
-
+    parser.add_argument('-y', '--year', choices=range(1998, 2014), help='year onwhich to do clustering')
+    parser.add_argument('-m', '--month', choices=range(1,13), help='month onwhich to do clustering')
+    args = parser.parse_args()
+    logging.basicConfig(filename='trmm_{0}_{1}.log'.format(str(args.year),str(args.month)), level=logging.INFO)
     start_time = time.time()
-    j = 2000
-    i = 8
-    main_script(j,i)
-    for j in range(1998,2014):
-    for i in range(1,13):
-        logging.info("In Month: ", str(i))
-        main_script(j,i)
+
+    main_script(args.year,args.month)
     
-    print("Done")
-    print("--- %s seconds ---" % (time.time() - start_time))
+    logging.info("Done")
+    logging.info("--- %s seconds ---" % (time.time() - start_time))
 
