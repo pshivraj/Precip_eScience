@@ -540,10 +540,10 @@ if __name__ == '__main__':
     j = 2000
     i = 8
     main_script(j,i)
-    # for j in range(1998,2014):
-    # for i in range(1,13):
-    #     logging.info("In Month: ", str(i))
-    #     main_script(j,i)
+    for j in range(1998,2014):
+    for i in range(1,13):
+        logging.info("In Month: ", str(i))
+        main_script(j,i)
     
     print("Done")
     print("--- %s seconds ---" % (time.time() - start_time))
