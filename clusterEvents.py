@@ -43,7 +43,7 @@ def save_s3_data(labels,eps,minSamples,Data,Time,filename):
     
     bucket.upload_file(filename+"Clustered_Data.nc4",'Trmm/EPO/'+filename+'Clustered_Data.nc4')
 
-    os.remove(filename+"Clustered_Data.nc4")
+    #os.remove(filename+"Clustered_Data.nc4")
 
 #function that reads local data from TRMM in the EC2 instances
 def read_TRMM_data(year,month,SR_minrate):
@@ -92,7 +92,6 @@ def read_TRMM_data(year,month,SR_minrate):
 
         for i in range(len(indices)):
             file = files[int(indices[i])]
-            logging.info("Downloaded file: %s", file)
 
             L, S, A, la, lo, Ti = extract_data(xr.open_dataset(file),SR_minrate)
             #append the new data in the matrices
@@ -117,7 +116,6 @@ def read_TRMM_data(year,month,SR_minrate):
 
         for i in range(len(indices)):
             file = files[int(indices[i])]
-            logging.info("Downloaded file: %s", file)
 
             L, S, A, la, lo, Ti = extract_data(xr.open_dataset(file),SR_minrate)
             #append the new data in the matrices
@@ -162,7 +160,6 @@ def load_s3_data(SR_minrate):
         if obj.key[-4:] == ".nc4":
 
             bucket.download_file(obj.key,os.path.join(os.path.join(home,'S3_downloads/',obj.key[17:])))
-            logging.info("Downloaded file: %s", obj.key[17:])
 
         #file = 'oneProfile/TPR7_uw1_00538.19980101.000558_EPO.nc4'
             L, S, A, la, lo, Ti = extract_data(xr.open_dataset(os.path.join(home,'S3_downloads/',obj.key[17:])),SR_minrate)
@@ -416,7 +413,6 @@ def extract_data(file, SR_min=5):
     #create grid of altitude, lat, and lon coordinates
     LON, LAT = np.meshgrid(lon, lat)
 
-    plt.scatter(LON,LAT,surf_rain)
     #size of lat and lon as variables
     nlat = len(lat)
     nlon = len(lon)
@@ -512,7 +508,7 @@ def main_script(year,month):
     SR_minrate = 2 #only keep data with rainrate greater than this value
     opt_frac = .5 #fraction of data to use when determining the optimal dbscan parameters
     Rad_Earth = 6371 #km earth's radius
-    MesoScale = 720 #Mesoscale is up to a few hundred km'
+    MesoScale = 300 #Mesoscale is up to a few hundred km'
     FrontSpeed = 30 # km/h speed at which a front often moves
     filename = str(year)+"_"+str(month).zfill(2)
 #    Data, Time, A = load_s3_data(SR_minrate)
