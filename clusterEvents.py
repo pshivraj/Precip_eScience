@@ -505,9 +505,7 @@ def create_distance_matrix(Data,FrontSpeed,Rad_Earth):
             Distance[j,i] = D
     return Distance
 
-def main_script(year_month):
-    year = year_month[0]
-    month = year_month[1]
+def main_script(year, month):
     #Define Key Values Here
     SR_minrate = 2 #only keep data with rainrate greater than this value
     opt_frac = .5 #fraction of data to use when determining the optimal dbscan parameters
@@ -542,9 +540,10 @@ if __name__ == '__main__':
 
     start_time = time.time()
     parser = argparse.ArgumentParser(description='Script run DBSCAN clustering on TRMM data')
-    parser.add_argument('-ym', '--year_month')
+    parser.add_argument('-y', '--year')
+    parser.add_argument('-m', '--month')
     args = parser.parse_args()
-    main_script(args.year_month)
+    main_script(args.year, args.month)
     print("Done")
     print("--- %s seconds ---" % (time.time() - start_time))
 
