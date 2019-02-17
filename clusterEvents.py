@@ -15,6 +15,8 @@ from os.path import expanduser
 import json
 import time
 import logging
+import argparse
+
 logging.basicConfig(filename='trmm.log', level=logging.INFO)
 
 def save_s3_data(labels,eps,minSamples,Data,Time,filename):
@@ -537,14 +539,12 @@ def main_script(year,month):
 if __name__ == '__main__':
 
     start_time = time.time()
-    j = 2000
-    i = 8
-    main_script(j,i)
-    for j in range(1998,2014):
-    for i in range(1,13):
-        logging.info("In Month: ", str(i))
-        main_script(j,i)
-    
+    parser = argparse.ArgumentParser(description='Script run DBSCAN clustering on TRMM data')
+    parser.add_argument('-ym', '--year_month')
+    args = parser.parse_args()
+    year = args.year_month[0]
+    month = args.year_month[1]
+    main_script(year,month)
     print("Done")
     print("--- %s seconds ---" % (time.time() - start_time))
 
