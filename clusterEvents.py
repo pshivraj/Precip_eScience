@@ -43,7 +43,7 @@ def save_s3_data(labels,eps,minSamples,Data,Time,filename):
     bucket = s3.Bucket('himatdata')
     home = os.getcwd()
     
-    bucket.upload_file(filename+"Clustered_Data.nc4",'Trmm/EPO/'+filename+'Clustered_Data.nc4')
+    bucket.upload_file(filename+"Clustered_Data.nc4",'Trmm/EPO/Cluster_results/'+filename+'_Clustered_Data.nc4')
 
     #os.remove(filename+"Clustered_Data.nc4")
 
