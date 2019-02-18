@@ -542,9 +542,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Script run DBSCAN clustering on TRMM data')
     parser.add_argument('-y', '--year')
     args = parser.parse_args()
-    year = args.year
+    year = int(args.year)
     for month in range(1,13):
-        logging.info("In Month: ", str(month))
+        logging.info("In Month: %s", (month))
         main_script(year,month)
     print("Done")
     print("--- %s seconds ---" % (time.time() - start_time))
