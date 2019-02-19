@@ -203,7 +203,7 @@ def time_to_deltaTime(Time):
     
     return DeltaTime
 
-#remove clusters in 5 days of next month
+#remove clusters in 5 days of next month and only in previous month
 def remove_dublicate(Data, Time, labels, month, year):
     n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
     time = pd.DatetimeIndex(Time)
@@ -213,35 +213,35 @@ def remove_dublicate(Data, Time, labels, month, year):
     Time = np.delete(Time,index)
     time = np.delete(time,index)
     labels = np.delete(labels,index)
+    
+    nmonth = month+1
+    pmonth = month-1
+    if nmonth>12: nmonth = 1
+    if pmonth<1: pmonth = 12
 
     for i in range(n_clusters_):
         cluster = Data[labels==i,:]
         tcluster = time[labels==i]
-        if month<12:
-            if np.amin(np.array(tcluster.month))>month:
-                Data = Data[labels!=i,:]
-                Time = Time[labels!=i]
-                time = time[labels!=i]
-                labels = labels[labels!=i]
-            elif np.max(tcluster).month>month & np.max(tcluster).day>4:
-                Data = Data[labels!=i,:]
-                Time = Time[labels!=i]
-                time = time[labels!=i]
-                labels = labels[labels!=i]
-        else:
-            if np.amax(np.array(tcluster.month))==1:
-                Data = Data[labels!=i,:]
-                Time = Time[labels!=i]
-                time = time[labels!=i]
-                labels = labels[labels!=i]
-            elif np.max(tcluster).month==1 & np.max(tcluster).day>4:
-                Data = Data[labels!=i,:]
-                Time = Time[labels!=i]
-                time = time[labels!=i]
-                labels = labels[labels!=i]
+        #remove clusters exclusively in the next month (captured in the next month)
+        if np.amin(np.array(tcluster.month))==nmonth:
+            Data = Data[labels!=i,:]
+            Time = Time[labels!=i]
+            time = time[labels!=i]
+            labels = labels[labels!=i]
+        #remove clusters who end in the last day of the next month (captured in the next month)
+        elif np.max(tcluster).month==nmonth & np.max(tcluster).day>4:
+            Data = Data[labels!=i,:]
+            Time = Time[labels!=i]
+            time = time[labels!=i]
+            labels = labels[labels!=i]
+        #remove clusters exclusively in the previous month
+        if np.amax(np.array(tcluster.month))==pmonth:
+            Data = Data[labels!=i,:]
+            Time = Time[labels!=i]
+            time = time[labels!=i]
+            labels = labels[labels!=i]
 
     return Data, Time, labels
-
 #Create array to Cluster the rainfall events, Scale the grid lat/lon so it is weighted 'fairly' compared to time
 def data_to_cluster(Data):
     #Extract [Lat, Lon, DeltaTime]
