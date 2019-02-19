@@ -4,7 +4,7 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 import glob
-from sklearn.cluster import DBSCAN, OPTICS
+from sklearn.cluster import DBSCAN
 from sklearn import metrics
 from sklearn.metrics import pairwise_distances, davies_bouldin_score
 from bayes_opt import BayesianOptimization
@@ -16,7 +16,8 @@ import json
 import time
 import logging
 import argparse
-
+ROOT_DIR = '/home/ubuntu/precip/Precip_eScience/'
+os.chdir(ROOT_DIR)
 logging.basicConfig(filename='trmm.log', level=logging.INFO)
 
 def save_s3_data(labels,eps,minSamples,Data,Time,filename):
