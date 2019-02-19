@@ -29,3 +29,19 @@ Class `Multi_instance()` needs to be initialized with:
 ## Runtime
 
 For `EPO` it takes ~12 hours on a c5.4x large machine scaled over 8 instances.
+
+## Things to Know
+
+While using Paramiko library to ssh and send commands, since it submits the job to linux kernel itself its necessary to provide **absolute paths** instead of **relative paths** for any command's. 
+Ex:- 
+```
+self.CMD_0 = "source /home/ubuntu/miniconda3/bin/activate precip_test"
+self.CMD_1 = "/home/ubuntu/miniconda3/bin/python /home/ubuntu/precip/Precip_eScience/clusterEvents.py -y {}".format(year)
+```
+Also this needs to have any references in the script to be run to be also **absolute**. For this setting the current directory in the file itself helps fixing any issues relating to paths.
+Ex:
+```
+ROOT_DIR = '/home/ubuntu/precip/Precip_eScience/'
+os.chdir(ROOT_DIR)
+```
+Sample example of setting current working directory can been seen in the [clusterEvents.py](https://github.com/lkuntz/Precip_eScience/blob/master/clusterEvents.py)
