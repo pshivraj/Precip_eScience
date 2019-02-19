@@ -4,7 +4,7 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 import glob
-from sklearn.cluster import DBSCAN, OPTICS
+from sklearn.cluster import DBSCAN
 from sklearn import metrics
 from sklearn.metrics import pairwise_distances, davies_bouldin_score
 from bayes_opt import BayesianOptimization
@@ -15,6 +15,10 @@ from os.path import expanduser
 import json
 import time
 import logging
+import argparse
+ROOT_DIR = '/home/ubuntu/precip/Precip_eScience/'
+os.chdir(ROOT_DIR)
+logging.basicConfig(filename='trmm.log', level=logging.INFO)
 
 def save_s3_data(labels,eps,minSamples,Data,Time,filename):
     #package the matrices as a dataset to save as a netcdf
@@ -40,7 +44,7 @@ def save_s3_data(labels,eps,minSamples,Data,Time,filename):
     bucket = s3.Bucket('himatdata')
     home = os.getcwd()
     
-    bucket.upload_file(filename+"Clustered_Data.nc4",'Trmm/EPO/ClusteringRun1/'+filename+'Clustered_Data.nc4')
+    bucket.upload_file(filename+"Clustered_Data.nc4",'Trmm/EPO/Cluster_results/'+filename+'_Clustered_Data.nc4')
 
     os.remove(filename+"Clustered_Data.nc4")
 
@@ -502,7 +506,7 @@ def create_distance_matrix(Data,FrontSpeed,Rad_Earth):
             Distance[j,i] = D
     return Distance
 
-def main_script(year,month):
+def main_script(year, month):
     #Define Key Values Here
     SR_minrate = 2 #only keep data with rainrate greater than this value
     opt_frac = .5 #fraction of data to use when determining the optimal dbscan parameters
@@ -534,14 +538,13 @@ def main_script(year,month):
     save_s3_data(labels,eps,min_samples,Data,Time,filename)
 
 if __name__ == '__main__':
-    parser.add_argument('-y', '--year', choices=range(1998, 2014), help='year onwhich to do clustering')
-    parser.add_argument('-m', '--month', choices=range(1,13), help='month onwhich to do clustering')
-    args = parser.parse_args()
-    logging.basicConfig(filename='trmm_{0}_{1}.log'.format(str(args.year),str(args.month)), level=logging.INFO)
     start_time = time.time()
-
-    main_script(args.year,args.month)
-    
-    logging.info("Done")
-    logging.info("--- %s seconds ---" % (time.time() - start_time))
-
+    parser = argparse.ArgumentParser(description='Script run DBSCAN clustering on TRMM data')
+    parser.add_argument('-y', '--year')
+    args = parser.parse_args()
+    year = int(args.year)
+    for month in range(1,13):
+        logging.info("In Month: %s", (month))
+        main_script(year,month)
+    print("Done")
+    print("--- %s seconds ---" % (time.time() - start_time))
